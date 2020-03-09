@@ -1,7 +1,7 @@
 ---
-title: "Fix the title"
-author: "Your Name Here"
-date: "Add the date"
+title: "Bicycle activity"
+author: "eric weah "
+date: "3/8/2020"
 output: 
     html_notebook:
     fig_height: 6
@@ -21,7 +21,7 @@ library(tidyverse)
 library(mosaicData)
 library(mosaic)
 library(ggplot2)
-
+library(lubridate)
 ```
 
 ### Data Intake
@@ -98,15 +98,21 @@ Trips %>%
   ggplot(aes(x=H))+
   geom_density(fill="gray", adjust=2)
 ```
-
+More bikes where taken at the begining of the year
 ##### Day of the week (Sunday to Saturday)
 ```{r}
 Trips %>%
   mutate(H= lubridate::wday(sdate)) %>%
   ggplot(aes(x=H))+
   geom_density(fill="gray", adjust=2)
+Trips %>%
+  mutate(H = lubridate::wday(sdate)) %>%
+  group_by(H) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x=H, y=count)) +
+    geom_point() + geom_line()
 ```
-
+Bikes were checked out out constantly during the day
 
 ##### Hour of the day (0 to 24)
 ```{r}
@@ -114,27 +120,53 @@ Trips %>%
   mutate(H=lubridate:: hour(sdate))%>%
   ggplot(aes(x=H))+
   geom_density(fill="gray", adjust=2)
-```
+Trips %>%
+  mutate(H = lubridate::hour(sdate)) %>%
+  group_by(H) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x=H, y=count)) +
+    geom_point() + geom_line()
 
+```
+More bikes were checked out after 5 hours of the day
 ##### Minute in the hour (0 to 60)
 ```{r}
 Trips %>%
   mutate(H = lubridate::minute(sdate))%>%
   ggplot(aes(x = H))+
   geom_density(fill ="gray", adjust=2)
+Trips %>%
+  mutate(H = lubridate::minute(sdate)) %>%
+  group_by(H) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x=H, y=count)) +
+    geom_point() + geom_line()
 ```
-
+There are about 100 bikes sold average 
 
 
 ### Group the bike rentals by hour, weekday, & client type
-
+```{r}
+Trips %>%
+  mutate(hour=lubridate::hour(sdate), weekday=lubridate::wday(sdate))%>%
+  group_by(hour,weekday,client) %>%
+  mutate(total=n())%>%
+  select(hour,weekday,client,total)%>%
+  ggplot(aes(x=hour,y=total))+facet_grid(~client)+geom_line()
+  
+```
 
 
 
 ### Construct a similar plot using density rather than frequency
 
-
-
+```{r}
+Trips%>%
+  mutate(hour=lubridate::hour(sdate), weekday=lubridate::wday(sdate))%>%
+  group_by(hour,weekday, client)%>%
+  ggplot(aes(x=hour))+geom_density(adjust=1)+facet_wrap(~client,ncol=4)+labs(title="")+geom_density(fill="gray",adjust=1)
+```
+the distribution is different in both graphs
 
 # Section: How Far?
 
@@ -152,7 +184,14 @@ Simple <-
 Simple2 <-
   Simple %>%
   rename(estation=sstation, lat2=lat, long2=long)
-
+StationPairs <- merge(Simple, Simple2, by=NULL)
+PairDistances <-
+  StationPairs%>%
+  mutate(distance = haversine(lat , long, lat2, long2))
+  select(sstation, estation, distance)
+RideDistances <-
+  Trips %>%
+  inner_join(PairDistances)
 ```
 
 ```{r}
@@ -166,19 +205,7 @@ merge(head(Simple,5), head(Simple2,4), by=NULL)
 
 
 # Section: Mapping the Stations
-```{r}
-devtools::install_github("rstudio/leaflet")
-library(leaflet)
-stationMap <-
-  leaflet(Stations) %>%   # like ggplot()
-  addTiles() %>%          # add the map
-  addCircleMarkers(radius=2, color="red") %>%
-  setView(-77.04, 38.9, zoom=12)
-view(stationMap)
-```
-```{r}
-view(stationMap)
-```
+
 
 
 
