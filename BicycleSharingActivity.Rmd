@@ -17,8 +17,10 @@ output:
 rm(list = ls())
 
 # load all packages here: `mosaic`, `tidyverse`, `lubridate`, and all others used
-
-
+library(tidyverse)
+library(mosaicData)
+library(mosaic)
+library(ggplot2)
 
 ```
 
@@ -31,12 +33,15 @@ The code chunk below loads the data for you, but you should study each line to u
 Stations <- mosaic::read.file("http://tiny.cc/dcf/DC-Stations.csv")
 
 ### Load the station data set into our RStudio environment as described in the text
+    Stations <- readr::read_csv("http://tiny.cc/dcf/DC-Stations.csv")
+
 
 # data_site <- "http://tiny.cc/dcf/2014-Q4-Trips-History-Data.rds"          # full data with 600k rows (uncomment to use)
 data_site <- "http://tiny.cc/dcf/2014-Q4-Trips-History-Data-Small.rds"    # small data with 10k rows 
 
 Trips <- readRDS(gzcon(url(data_site)))
-
+data_site <- "http://tiny.cc/dcf/2014-Q4-Trips-History-Data-Small.rds"
+    Trips <- readRDS(gzcon(url(data_site)))
 
 ### Backup code if you need to download the .rds file from the web and load a local version
 
@@ -53,7 +58,11 @@ Trips <- readRDS(gzcon(url(data_site)))
 
 
 ### Plot check-out times. (reproduce Figure 17.1: Use of shared bicycles over the three months in Q4.)
-
+```{r}
+Trips %>%
+  ggplot(aes(x=sdate))+
+  geom_density(fill="gray", color=NA)
+```
 
 
 
@@ -61,7 +70,20 @@ Trips <- readRDS(gzcon(url(data_site)))
 
 Make box & whisker plot showing the distribution of rental duration by client type.  As instructed in the text, make sure you either configure your scale or use a filter to suppress outliers from dictating the axis range.
 
+```{r}
+T_duration <-
+  Trips %>%
+  mutate(duration= (as.numeric(edate- sdate)/60)) %>%
+  filter(duration<= 60)
+T_duration
 
+
+```
+```{r}
+T_duration %>%
+  ggplot(aes(x=client, y=duration))+
+  geom_boxplot(notch = TRUE)
+```
 
 # Section: When are bikes used?
 
@@ -70,18 +92,37 @@ Note: You'll use several functions that begin with `lubridate::` this means that
 
 ##### Day of the year (1 to 365)
 
-
+```{r}
+Trips %>%
+  mutate(H= lubridate::yday(sdate)) %>%
+  ggplot(aes(x=H))+
+  geom_density(fill="gray", adjust=2)
+```
 
 ##### Day of the week (Sunday to Saturday)
-
+```{r}
+Trips %>%
+  mutate(H= lubridate::wday(sdate)) %>%
+  ggplot(aes(x=H))+
+  geom_density(fill="gray", adjust=2)
+```
 
 
 ##### Hour of the day (0 to 24)
-
-
+```{r}
+Trips %>%
+  mutate(H=lubridate:: hour(sdate))%>%
+  ggplot(aes(x=H))+
+  geom_density(fill="gray", adjust=2)
+```
 
 ##### Minute in the hour (0 to 60)
-
+```{r}
+Trips %>%
+  mutate(H = lubridate::minute(sdate))%>%
+  ggplot(aes(x = H))+
+  geom_density(fill ="gray", adjust=2)
+```
 
 
 
@@ -103,7 +144,20 @@ We want to calculate the distance between stations using the `haversine()` funct
 source("http://tiny.cc/dcf/haversine.R")  
 ```
 
+```{r}
+Simple <-
+  Stations %>%
+  select(name, lat, long) %>%
+  rename(sstation=name)
+Simple2 <-
+  Simple %>%
+  rename(estation=sstation, lat2=lat, long2=long)
 
+```
+
+```{r}
+merge(head(Simple,5), head(Simple2,4), by=NULL)
+```
 
 
 
@@ -112,7 +166,19 @@ source("http://tiny.cc/dcf/haversine.R")
 
 
 # Section: Mapping the Stations
-
+```{r}
+devtools::install_github("rstudio/leaflet")
+library(leaflet)
+stationMap <-
+  leaflet(Stations) %>%   # like ggplot()
+  addTiles() %>%          # add the map
+  addCircleMarkers(radius=2, color="red") %>%
+  setView(-77.04, 38.9, zoom=12)
+view(stationMap)
+```
+```{r}
+view(stationMap)
+```
 
 
 
