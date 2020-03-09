@@ -188,7 +188,6 @@ StationPairs <- merge(Simple, Simple2, by=NULL)
 PairDistances <-
   StationPairs%>%
   mutate(distance = haversine(lat , long, lat2, long2))
-  select(sstation, estation, distance)
 RideDistances <-
   Trips %>%
   inner_join(PairDistances)
